@@ -116,6 +116,6 @@ export class ListElementTemplate extends BaseTemplate {
     }
 
     private toDomSafeId(value: string): string {
-        return value.replace(/[^A-Za-z0-9\-_:.]/g, '_')
+        return encodeURIComponent(value).replace(/%/g, '_')
     }
 }

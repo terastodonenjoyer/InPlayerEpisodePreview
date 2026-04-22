@@ -34,7 +34,6 @@ export class ProgramDataStore {
 
     public get activeSeason(): Season | undefined {
         return this.seasons.find(season => season.episodes.some(episode => episode.Id === this.activeMediaSourceId))
-            ?? (this.seasons.length > 0 ? this.seasons[0] : undefined)
     }
     
     public get type(): ItemType {
@@ -213,10 +212,15 @@ export class ProgramDataStore {
                 this.movies = [... this.movies.filter(movie => movie.Id !== itemToUpdate.Id), itemToUpdate]
         }
 
-        this._programData.queueItems = [
-            ...this._programData.queueItems.filter(item => item.Id !== itemToUpdate.Id),
-            itemToUpdate
-        ]
+        const shouldTrackInQueueItems = this._programData.nowPlayingQueue.includes(itemToUpdate.Id)
+            || this._programData.queueItems.some(item => item.Id === itemToUpdate.Id)
+
+        if (shouldTrackInQueueItems) {
+            this._programData.queueItems = [
+                ...this._programData.queueItems.filter(item => item.Id !== itemToUpdate.Id),
+                itemToUpdate
+            ]
+        }
     }
 
     private get allLoadedItems(): BaseItem[] {

@@ -98,12 +98,12 @@ export class ListElementFactory {
     private resolveDisplayOrder(episodes: BaseItem[]): BaseItem[] {
         const episodesCopy = [...episodes]
         if (!this.programDataStore.isShuffleMode) {
-            return episodesCopy.sort((a, b) => (a.IndexNumber ?? Number.MAX_SAFE_INTEGER) - (b.IndexNumber ?? Number.MAX_SAFE_INTEGER))
+            return this.sortByIndexNumber(episodesCopy)
         }
 
         const queueOrderedItems = this.programDataStore.queueOrderedItems
         if (!queueOrderedItems || queueOrderedItems.length === 0) {
-            return episodesCopy.sort((a, b) => (a.IndexNumber ?? Number.MAX_SAFE_INTEGER) - (b.IndexNumber ?? Number.MAX_SAFE_INTEGER))
+            return this.sortByIndexNumber(episodesCopy)
         }
 
         const requestedEpisodeIds = new Set(episodesCopy.map(episode => episode.Id))
@@ -111,9 +111,9 @@ export class ListElementFactory {
         const queueOrderedIds = new Set(queueOrderedSubset.map(item => item.Id))
         const remainingEpisodes = episodesCopy
             .filter(episode => !queueOrderedIds.has(episode.Id))
-            .sort((a, b) => (a.IndexNumber ?? Number.MAX_SAFE_INTEGER) - (b.IndexNumber ?? Number.MAX_SAFE_INTEGER))
+        const sortedRemainingEpisodes = this.sortByIndexNumber(remainingEpisodes)
 
-        return [...queueOrderedSubset, ...remainingEpisodes]
+        return [...queueOrderedSubset, ...sortedRemainingEpisodes]
     }
 
     private getEpisodeSelectorById(episodeId: string): string {
@@ -121,5 +121,9 @@ export class ListElementFactory {
             ? CSS.escape(episodeId)
             : episodeId.replace(/["\\]/g, '\\$&')
         return `[data-id="${escapedEpisodeId}"]`
+    }
+
+    private sortByIndexNumber(episodes: BaseItem[]): BaseItem[] {
+        return episodes.sort((a, b) => (a.IndexNumber ?? Number.MAX_SAFE_INTEGER) - (b.IndexNumber ?? Number.MAX_SAFE_INTEGER))
     }
 }
