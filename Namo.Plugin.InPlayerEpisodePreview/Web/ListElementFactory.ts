@@ -25,7 +25,7 @@ export class ListElementFactory {
                     element.classList.remove('selectedListItem');
                 });
                 
-                const episodeContainer: Element = document.querySelector(`[data-id="${episode.Id}"]`)?.querySelector('.previewListItemContent');
+                const episodeContainer: Element = document.querySelector(this.getEpisodeSelectorById(episode.Id))?.querySelector('.previewListItemContent');
                 if (!episodeContainer) {
                     return
                 }
@@ -53,7 +53,7 @@ export class ListElementFactory {
             });
 
             if (episode.Id === this.programDataStore.activeMediaSourceId) {
-                const episodeNode: Element = document.querySelector(`[data-id="${episode.Id}"]`)?.querySelector('.previewListItemContent');
+                const episodeNode: Element = document.querySelector(this.getEpisodeSelectorById(episode.Id))?.querySelector('.previewListItemContent');
                 if (!episodeNode) {
                     continue
                 }
@@ -114,5 +114,12 @@ export class ListElementFactory {
             .sort((a, b) => (a.IndexNumber ?? Number.MAX_SAFE_INTEGER) - (b.IndexNumber ?? Number.MAX_SAFE_INTEGER))
 
         return [...queueOrderedSubset, ...remainingEpisodes]
+    }
+
+    private getEpisodeSelectorById(episodeId: string): string {
+        const escapedEpisodeId = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+            ? CSS.escape(episodeId)
+            : episodeId.replace(/["\\]/g, '\\$&')
+        return `[data-id="${escapedEpisodeId}"]`
     }
 }

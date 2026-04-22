@@ -32,9 +32,9 @@ export class ProgramDataStore {
         this._programData.activeMediaSourceId = activeMediaSourceId
     }
 
-    public get activeSeason(): Season {
+    public get activeSeason(): Season | undefined {
         return this.seasons.find(season => season.episodes.some(episode => episode.Id === this.activeMediaSourceId))
-            ?? this.seasons[0]
+            ?? (this.seasons.length > 0 ? this.seasons[0] : undefined)
     }
     
     public get type(): ItemType {
@@ -113,7 +113,7 @@ export class ProgramDataStore {
         
         switch (this.type) {
             case ItemType.Series:
-                return this.seasons.flatMap(season => season.episodes).length >= 1 || this.queueOrderedItems.length >= 1
+                return this.seasons.flatMap(season => season.episodes).length > 0 || this.queueOrderedItems.length > 0
             case ItemType.Movie:
                 return true
             case ItemType.BoxSet:
