@@ -124,6 +124,13 @@ export class ListElementFactory {
     }
 
     private sortByIndexNumber(episodes: BaseItem[]): BaseItem[] {
-        return episodes.sort((a, b) => (a.IndexNumber ?? Number.MAX_SAFE_INTEGER) - (b.IndexNumber ?? Number.MAX_SAFE_INTEGER))
+        return episodes.sort((a, b) => {
+            const indexDifference = (a.IndexNumber ?? Number.MAX_SAFE_INTEGER) - (b.IndexNumber ?? Number.MAX_SAFE_INTEGER)
+            if (indexDifference !== 0) {
+                return indexDifference
+            }
+
+            return (a.Name ?? '').localeCompare(b.Name ?? '')
+        })
     }
 }

@@ -136,7 +136,7 @@ export class ProgramDataStore {
         const allItemsById = new Map<string, BaseItem>(this.allLoadedItems.map(item => [item.Id, item]))
         return this.nowPlayingQueue
             .map(queueItemId => allItemsById.get(queueItemId))
-            .filter(item => !!item)
+            .filter(Boolean)
     }
 
     public getMissingQueueItemIds(): string[] {
