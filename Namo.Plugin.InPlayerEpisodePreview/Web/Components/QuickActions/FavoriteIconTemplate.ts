@@ -4,7 +4,7 @@ import {BaseItem} from "../../Models/Episode"
 export class FavoriteIconTemplate extends BaseTemplate {
     constructor(container: HTMLElement, positionAfterIndex: number, private episode: BaseItem) {
         super(container, positionAfterIndex)
-        this.setElementId('favoriteButton-' + episode.IndexNumber)
+        this.setElementId('favoriteButton-' + episode.Id)
     }
 
     getTemplate(): string {

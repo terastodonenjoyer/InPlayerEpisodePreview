@@ -175,14 +175,20 @@ function viewShowEventHandler(): void {
                 // delete episode content for all existing episodes in the preview list;
                 contentDiv.innerHTML = ''
                 
-                listElementFactory.createSeasonElements(programDataStore.seasons, contentDiv, programDataStore.activeSeason.IndexNumber, popupTitle)
+                listElementFactory.createSeasonElements(programDataStore.seasons, contentDiv, programDataStore.activeSeason?.IndexNumber ?? 0, popupTitle)
             })
 
             switch (programDataStore.type) {
                 case ItemType.Series:
-                    popupTitle.setText(programDataStore.activeSeason.seasonName)
-                    popupTitle.setVisible(true)
-                    listElementFactory.createEpisodeElements(programDataStore.activeSeason.episodes, contentDiv)
+                    if (programDataStore.isShuffleMode && programDataStore.queueOrderedItems.length > 0) {
+                        popupTitle.setText('Now Playing Queue')
+                        popupTitle.setVisible(programDataStore.seasons.length > 1)
+                        listElementFactory.createEpisodeElements(programDataStore.queueOrderedItems, contentDiv)
+                    } else {
+                        popupTitle.setText(programDataStore.activeSeason?.seasonName ?? '')
+                        popupTitle.setVisible(true)
+                        listElementFactory.createEpisodeElements(programDataStore.activeSeason?.episodes ?? [], contentDiv)
+                    }
                     break
                 case ItemType.Movie:
                     popupTitle.setText('')

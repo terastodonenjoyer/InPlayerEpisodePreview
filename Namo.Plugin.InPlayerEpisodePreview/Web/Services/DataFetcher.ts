@@ -39,6 +39,10 @@ export class DataFetcher {
                 if (this.programDataStore.activeMediaSourceId !== playingInfo.MediaSourceId)
                     this.programDataStore.activeMediaSourceId = playingInfo.MediaSourceId
 
+                this.programDataStore.playbackOrder = playingInfo.PlaybackOrder
+                this.programDataStore.nowPlayingQueue = (playingInfo.NowPlayingQueue || []).map(queueItem => queueItem.Id)
+                this.fetchMissingQueueItems().then()
+
                 // Endpoint: /Sessions/Playing/Progress
                 if (urlPathname.includes('Progress')) {
                     // update the playback progress of the currently played video
@@ -75,6 +79,10 @@ export class DataFetcher {
                     this.programDataStore.type = ItemType.Series
                     this.programDataStore.seasons = this.getFormattedEpisodeData(data)
                 })
+
+            } else if (urlPathname.includes('User') && urlPathname.includes('Items') && url.searchParams.has('Ids')) {
+                this.logger.debug('Received Items by Ids')
+                response.clone().json().then((data: ItemDto): void => this.programDataStore.mergeQueueItems(data?.Items ?? []))
 
             } else if (urlPathname.includes('User') && urlPathname.includes('Items') && url.search.includes('ParentId')) {
                 this.logger.debug('Received Items with ParentId')
@@ -152,6 +160,7 @@ export class DataFetcher {
                 if (itemDto.Items.length > 1 || !this.programDataStore.seasons.flatMap(season => season.episodes).some(episode => episode.Id === firstItem.Id)) {
                     this.programDataStore.type = ItemType.Series
                     this.programDataStore.seasons = this.getFormattedEpisodeData(itemDto)
+                    this.fetchMissingQueueItems().then()
                 }
                 break
             case ItemType.Movie:
@@ -161,6 +170,7 @@ export class DataFetcher {
                         ...movie,
                         IndexNumber: idx + 1
                     }))
+                    this.fetchMissingQueueItems().then()
                     break
                 }
                 
@@ -173,6 +183,7 @@ export class DataFetcher {
                         ...movie,
                         IndexNumber: idx + 1
                     }))
+                    this.fetchMissingQueueItems().then()
                 }
                 break
             case ItemType.Video:
@@ -183,6 +194,7 @@ export class DataFetcher {
                         ...video,
                         IndexNumber: idx + 1
                     }))
+                    this.fetchMissingQueueItems().then()
                     break
                 }
                 
@@ -196,6 +208,7 @@ export class DataFetcher {
                         ...video,
                         IndexNumber: idx + 1
                     }))
+                    this.fetchMissingQueueItems().then()
                 }
                 break
         }
@@ -237,6 +250,27 @@ export class DataFetcher {
                 group.push(curr)
                 return { ...prev, [groupKey]: group }
             }, {})
+        }
+    }
+
+    private async fetchMissingQueueItems(): Promise<void> {
+        const missingQueueItemIds = this.programDataStore.getMissingQueueItemIds()
+        if (missingQueueItemIds.length === 0) {
+            return
+        }
+
+        try {
+            const userId = ApiClient.getCurrentUserId?.()
+            if (!userId) {
+                return
+            }
+
+            const idsParam = missingQueueItemIds.map(id => encodeURIComponent(id)).join(',')
+            const url = ApiClient.getUrl(`/Users/${userId}/Items?Ids=${idsParam}`)
+            const itemDto: ItemDto = await ApiClient.ajax({type: 'GET', url, dataType: 'json'})
+            this.programDataStore.mergeQueueItems(itemDto?.Items ?? [])
+        } catch (ex) {
+            this.logger.error(`Couldn't fetch queue items by id`, ex)
         }
     }
 }

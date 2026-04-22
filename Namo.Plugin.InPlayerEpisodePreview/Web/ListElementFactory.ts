@@ -11,10 +11,10 @@ export class ListElementFactory {
     constructor(private playbackHandler: PlaybackHandler, private programDataStore: ProgramDataStore) { }
     
     public async createEpisodeElements(episodes: BaseItem[], parentDiv: HTMLElement): Promise<void> {
-        episodes.sort((a, b) => a.IndexNumber - b.IndexNumber)
+        const orderedEpisodes = this.resolveDisplayOrder(episodes)
         
-        for (let i: number = 0; i < episodes.length; i++) {
-            const episode = episodes[i]
+        for (let i: number = 0; i < orderedEpisodes.length; i++) {
+            const episode = orderedEpisodes[i]
             const episodeListElementTemplate = new ListElementTemplate(parentDiv, i, episode, this.playbackHandler, this.programDataStore);
             episodeListElementTemplate.render(async (e: MouseEvent) => {
                 e.stopPropagation();
@@ -25,7 +25,10 @@ export class ListElementFactory {
                     element.classList.remove('selectedListItem');
                 });
                 
-                const episodeContainer: Element = document.querySelector(`[data-id="${episode.IndexNumber}"]`).querySelector('.previewListItemContent');
+                const episodeContainer: Element = document.querySelector(`[data-id="${episode.Id}"]`)?.querySelector('.previewListItemContent');
+                if (!episodeContainer) {
+                    return
+                }
                 
                 // load episode description
                 if (!episode.Description) {
@@ -50,7 +53,10 @@ export class ListElementFactory {
             });
 
             if (episode.Id === this.programDataStore.activeMediaSourceId) {
-                const episodeNode: Element = document.querySelector(`[data-id="${episode.IndexNumber}"]`).querySelector('.previewListItemContent');
+                const episodeNode: Element = document.querySelector(`[data-id="${episode.Id}"]`)?.querySelector('.previewListItemContent');
+                if (!episodeNode) {
+                    continue
+                }
                 
                 // preload episode description for the currently playing episode
                 if (!episode.Description) {
@@ -87,5 +93,26 @@ export class ListElementFactory {
                 this.createEpisodeElements(seasons[i].episodes, parentDiv).then();
             });
         }
+    }
+
+    private resolveDisplayOrder(episodes: BaseItem[]): BaseItem[] {
+        const episodesCopy = [...episodes]
+        if (!this.programDataStore.isShuffleMode) {
+            return episodesCopy.sort((a, b) => (a.IndexNumber ?? Number.MAX_SAFE_INTEGER) - (b.IndexNumber ?? Number.MAX_SAFE_INTEGER))
+        }
+
+        const queueOrderedItems = this.programDataStore.queueOrderedItems
+        if (!queueOrderedItems || queueOrderedItems.length === 0) {
+            return episodesCopy.sort((a, b) => (a.IndexNumber ?? Number.MAX_SAFE_INTEGER) - (b.IndexNumber ?? Number.MAX_SAFE_INTEGER))
+        }
+
+        const requestedEpisodeIds = new Set(episodesCopy.map(episode => episode.Id))
+        const queueOrderedSubset = queueOrderedItems.filter(item => requestedEpisodeIds.has(item.Id))
+        const queueOrderedIds = new Set(queueOrderedSubset.map(item => item.Id))
+        const remainingEpisodes = episodesCopy
+            .filter(episode => !queueOrderedIds.has(episode.Id))
+            .sort((a, b) => (a.IndexNumber ?? Number.MAX_SAFE_INTEGER) - (b.IndexNumber ?? Number.MAX_SAFE_INTEGER))
+
+        return [...queueOrderedSubset, ...remainingEpisodes]
     }
 }

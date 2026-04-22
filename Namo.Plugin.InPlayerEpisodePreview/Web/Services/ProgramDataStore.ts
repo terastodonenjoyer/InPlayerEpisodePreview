@@ -4,6 +4,7 @@ import {BaseItem} from "../Models/Episode";
 import {ItemType} from "../Models/ItemType";
 import {DefaultPluginSettings, PluginSettings} from "../Models/PluginSettings";
 import {DefaultServerSettings, ServerSettings} from "../Models/ServerSettings";
+import {PlaybackOrder} from "../Models/PlaybackProgressInfo";
 
 export class ProgramDataStore {
     private _programData: ProgramData
@@ -15,6 +16,9 @@ export class ProgramDataStore {
             type: undefined,
             movies: [],
             seasons: [],
+            playbackOrder: PlaybackOrder.Default,
+            nowPlayingQueue: [],
+            queueItems: [],
             pluginSettings: DefaultPluginSettings,
             serverSettings: DefaultServerSettings
         }
@@ -30,6 +34,7 @@ export class ProgramDataStore {
 
     public get activeSeason(): Season {
         return this.seasons.find(season => season.episodes.some(episode => episode.Id === this.activeMediaSourceId))
+            ?? this.seasons[0]
     }
     
     public get type(): ItemType {
@@ -66,6 +71,26 @@ export class ProgramDataStore {
         this._programData.movies = []
     }
 
+    public get playbackOrder(): PlaybackOrder {
+        return this._programData.playbackOrder
+    }
+
+    public set playbackOrder(order: PlaybackOrder) {
+        this._programData.playbackOrder = order
+    }
+
+    public get nowPlayingQueue(): string[] {
+        return this._programData.nowPlayingQueue
+    }
+
+    public set nowPlayingQueue(queueIds: string[]) {
+        this._programData.nowPlayingQueue = queueIds
+    }
+
+    public get isShuffleMode(): boolean {
+        return this.playbackOrder === PlaybackOrder.Shuffle
+    }
+
     public get pluginSettings(): PluginSettings {
         return this._programData.pluginSettings
     }
@@ -88,7 +113,7 @@ export class ProgramDataStore {
         
         switch (this.type) {
             case ItemType.Series:
-                return this.activeSeason.episodes.length >= 1
+                return this.seasons.flatMap(season => season.episodes).length >= 1 || this.queueOrderedItems.length >= 1
             case ItemType.Movie:
                 return true
             case ItemType.BoxSet:
@@ -104,17 +129,59 @@ export class ProgramDataStore {
         return this.pluginSettings.EnabledItemTypes
     }
 
+    public get queueOrderedItems(): BaseItem[] {
+        if (!this.nowPlayingQueue || this.nowPlayingQueue.length === 0) {
+            return []
+        }
+
+        const allItemsById = new Map<string, BaseItem>(this.allLoadedItems.map(item => [item.Id, item]))
+        return this.nowPlayingQueue
+            .map(queueItemId => allItemsById.get(queueItemId))
+            .filter(item => !!item)
+    }
+
+    public getMissingQueueItemIds(): string[] {
+        if (!this.nowPlayingQueue || this.nowPlayingQueue.length === 0) {
+            return []
+        }
+
+        const allItemsById = new Set<string>(this.allLoadedItems.map(item => item.Id))
+        return this.nowPlayingQueue.filter(queueItemId => !allItemsById.has(queueItemId))
+    }
+
+    public mergeQueueItems(items: BaseItem[]): void {
+        if (!items || items.length === 0) {
+            return
+        }
+
+        const existingQueueItemsById = new Map<string, BaseItem>(this._programData.queueItems.map(item => [item.Id, item]))
+        for (const item of items) {
+            existingQueueItemsById.set(item.Id, item)
+            const existingItem = this.getItemById(item.Id)
+            if (existingItem) {
+                this.updateItem({
+                    ...existingItem,
+                    ...item
+                })
+            }
+        }
+
+        this._programData.queueItems = Array.from(existingQueueItemsById.values())
+    }
+
     public getItemById(itemId: string): BaseItem {
         switch (this.type) {
             case ItemType.Series:
                 return this.seasons
                     .flatMap(season => season.episodes)
                     .find(episode => episode.Id === itemId)
+                    ?? this._programData.queueItems.find(item => item.Id === itemId)
             case ItemType.BoxSet:
             case ItemType.Movie:
             case ItemType.Folder:
             case ItemType.Video:
                 return this.movies.find(movie => movie.Id === itemId)
+                    ?? this._programData.queueItems.find(item => item.Id === itemId)
             default: 
                 return undefined
         }
@@ -124,6 +191,13 @@ export class ProgramDataStore {
         switch (this.type) {
             case ItemType.Series: {
                     const season: Season = this.seasons.find(season => season.seasonId === itemToUpdate.SeasonId)
+                    if (!season) {
+                        this._programData.queueItems = [
+                            ...this._programData.queueItems.filter(item => item.Id !== itemToUpdate.Id),
+                            itemToUpdate
+                        ]
+                        break
+                    }
                     this.seasons = [
                         ... this.seasons.filter(season => season.seasonId !== itemToUpdate.SeasonId), {
                             ...season,
@@ -138,5 +212,20 @@ export class ProgramDataStore {
             case ItemType.Video:
                 this.movies = [... this.movies.filter(movie => movie.Id !== itemToUpdate.Id), itemToUpdate]
         }
+
+        this._programData.queueItems = [
+            ...this._programData.queueItems.filter(item => item.Id !== itemToUpdate.Id),
+            itemToUpdate
+        ]
+    }
+
+    private get allLoadedItems(): BaseItem[] {
+        const baseItems = this.type === ItemType.Series
+            ? this.seasons.flatMap(season => season.episodes)
+            : this.movies
+
+        const allItemsById = new Map<string, BaseItem>(baseItems.map(item => [item.Id, item]))
+        this._programData.queueItems.forEach(item => allItemsById.set(item.Id, item))
+        return Array.from(allItemsById.values())
     }
 }
