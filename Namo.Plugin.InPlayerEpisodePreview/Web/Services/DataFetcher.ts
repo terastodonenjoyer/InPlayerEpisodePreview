@@ -39,10 +39,11 @@ export class DataFetcher {
                 if (this.programDataStore.activeMediaSourceId !== playingInfo.MediaSourceId)
                     this.programDataStore.activeMediaSourceId = playingInfo.MediaSourceId
 
-                const playbackOrderRaw = playingInfo.PlaybackOrder
-                const playbackOrder: string = (typeof playbackOrderRaw === 'number'
+                const playbackOrderRaw = playingInfo.PlaybackOrder as unknown as PlaybackOrder | string
+                const playbackOrderFromEnum = typeof playbackOrderRaw === 'number'
                     ? PlaybackOrder[playbackOrderRaw]
-                    : String(playbackOrderRaw ?? 'Default')) ?? String(playbackOrderRaw ?? 'Default')
+                    : playbackOrderRaw
+                const playbackOrder: string = playbackOrderFromEnum ?? 'Default'
                 const nowPlayingQueueIds: string[] = (playingInfo.NowPlayingQueue ?? [])
                     .map((queueItem) => queueItem?.Id)
                     .filter((id): id is string => Boolean(id))

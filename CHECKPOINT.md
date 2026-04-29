@@ -45,6 +45,7 @@ Hinweis: CLAUDE.md fehlt im Repo-Root (keine Architektur-Datei verfügbar).
 | 29.04.2026 21:10:12:120 | `Web/Models/ProgramData.ts:8-13` | PlaybackOrder + Queue-Felder ergänzt |
 | 29.04.2026 21:15:00:100 | `Web/Services/ProgramDataStore.ts:9-278` | Playback/Queue-State, Subscriber, Queue-Fetch + Merge ergänzt |
 | 29.04.2026 21:16:10:200 | `Web/Services/DataFetcher.ts:35-49` | PlaybackOrder/NowPlayingQueue aus Sessions/Playing persistiert |
+| 29.04.2026 21:31:20:000 | `Web/Services/DataFetcher.ts:42-47` | PlaybackOrder-Fallback vereinfacht |
 | 29.04.2026 21:17:30:300 | `Web/ListElementFactory.ts:13-107` | Queue-Order-Resolver + Id-basierte Selektoren |
 | 29.04.2026 21:18:40:400 | `Web/Components/ListElementTemplate.ts:15-112` | DOM-IDs/Selectors auf Item.Id umgestellt |
 | 29.04.2026 21:19:10:410 | `Web/Components/EpisodeDetails.ts:5-7` | EpisodeDetails-ID auf Item.Id umgestellt |
@@ -52,7 +53,7 @@ Hinweis: CLAUDE.md fehlt im Repo-Root (keine Architektur-Datei verfügbar).
 | 29.04.2026 21:19:30:430 | `Web/Components/QuickActions/FavoriteIconTemplate.ts:5-8` | Favorite-Button-ID auf Item.Id umgestellt |
 | 29.04.2026 21:20:45:500 | `Web/InPlayerPreview.ts:112-233` | Shuffle-Default-Ansicht + Re-Render bei Queue-Updates |
 | 29.04.2026 21:26:05:650 | `Web/InPlayerPreview.js` | Bundle via webpack aktualisiert |
-| 29.04.2026 21:30:00:000 | `CHECKIN.md:1` | CHECKOUT-Eintrag ergänzt |
+| 29.04.2026 21:32:10:000 | `CHECKIN.md:1` | CHECKOUT-Eintrag ergänzt |
 
 **Detail:**
 ```ts
@@ -272,10 +273,11 @@ if (config.body && typeof config.body === 'string' && urlPathname.includes('Sess
     if (this.programDataStore.activeMediaSourceId !== playingInfo.MediaSourceId)
         this.programDataStore.activeMediaSourceId = playingInfo.MediaSourceId
 
-    const playbackOrderRaw = playingInfo.PlaybackOrder
-    const playbackOrder: string = (typeof playbackOrderRaw === 'number'
+    const playbackOrderRaw = playingInfo.PlaybackOrder as unknown as PlaybackOrder | string
+    const playbackOrderFromEnum = typeof playbackOrderRaw === 'number'
         ? PlaybackOrder[playbackOrderRaw]
-        : String(playbackOrderRaw ?? 'Default')) ?? String(playbackOrderRaw ?? 'Default')
+        : playbackOrderRaw
+    const playbackOrder: string = playbackOrderFromEnum ?? 'Default'
     const nowPlayingQueueIds: string[] = (playingInfo.NowPlayingQueue ?? [])
         .map((queueItem) => queueItem?.Id)
         .filter((id): id is string => Boolean(id))
@@ -455,7 +457,7 @@ Begründung: Embedded Bundle muss nach TS-Änderungen neu gebaut werden.
 Build succeeded.
 ```
 ```
-29.04.2026 21:28:10 — npx webpack --config webpack.config.js
+29.04.2026 21:31:40 — npx webpack --config webpack.config.js
 webpack 5.101.3 compiled successfully
 ```
 
