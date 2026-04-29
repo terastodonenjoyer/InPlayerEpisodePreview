@@ -4,7 +4,7 @@ import {BaseItem} from "../Models/Episode";
 export class EpisodeDetailsTemplate extends BaseTemplate {
     constructor(container: HTMLElement, positionAfterIndex: number, private episode: BaseItem) {
         super(container, positionAfterIndex);
-        this.setElementId(`episode-${episode.IndexNumber}`);
+        this.setElementId(`episode-${episode.Id}`);
     }
 
     getTemplate(): string {

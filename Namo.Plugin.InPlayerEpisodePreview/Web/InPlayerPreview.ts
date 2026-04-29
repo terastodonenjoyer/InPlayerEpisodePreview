@@ -111,6 +111,7 @@ initialize()
 const videoPaths: string[] = ['/video']
 let previousRoutePath: string = null
 let previewContainerLoaded: boolean = false
+let playbackStateUnsubscribe: (() => void) | null = null
 document.addEventListener('viewshow', viewShowEventHandler)
 
 function viewShowEventHandler(): void {
@@ -163,51 +164,80 @@ function viewShowEventHandler(): void {
             dialogContainer.render()
 
             const contentDiv: HTMLElement = document.getElementById('popupContentContainer')
-            contentDiv.innerHTML = '' // remove old content
 
             const popupTitle: PopupTitleTemplate = new PopupTitleTemplate(document.getElementById('popupFocusContainer'), -1, programDataStore)
+            let showingSeasonList: boolean = false
+
+            const renderSeasonList = (): void => {
+                showingSeasonList = true
+                popupTitle.setVisible(false)
+                contentDiv.innerHTML = ''
+                listElementFactory.createSeasonElements(programDataStore.seasons, contentDiv, programDataStore.activeSeason.IndexNumber, popupTitle)
+            }
+
+            const renderEpisodeList = (): void => {
+                showingSeasonList = false
+                contentDiv.innerHTML = ''
+
+                const isShuffleQueue = programDataStore.isShuffleActive() && programDataStore.nowPlayingQueueIds.length > 0
+
+                switch (programDataStore.type) {
+                    case ItemType.Series: {
+                        if (isShuffleQueue) {
+                            popupTitle.setText('Up Next (Shuffle Queue)')
+                            popupTitle.setVisible(true)
+                            const allEpisodes = programDataStore.seasons.flatMap(season => season.episodes)
+                            listElementFactory.createEpisodeElements(allEpisodes, contentDiv)
+                            break
+                        }
+
+                        popupTitle.setText(programDataStore.activeSeason.seasonName)
+                        popupTitle.setVisible(true)
+                        listElementFactory.createEpisodeElements(programDataStore.activeSeason.episodes, contentDiv)
+                        break
+                    }
+                    case ItemType.Movie:
+                        popupTitle.setText('')
+                        popupTitle.setVisible(false)
+                        listElementFactory.createEpisodeElements(programDataStore.movies.filter(movie => movie.Id === programDataStore.activeMediaSourceId), contentDiv)
+                        break
+                    case ItemType.Video:
+                        popupTitle.setText('')
+                        popupTitle.setVisible(false)
+                        listElementFactory.createEpisodeElements(programDataStore.movies, contentDiv)
+                        break
+                    case ItemType.BoxSet:
+                    case ItemType.Folder:
+                        popupTitle.setText(programDataStore.boxSetName)
+                        popupTitle.setVisible(true)
+                        listElementFactory.createEpisodeElements(programDataStore.movies, contentDiv)
+                        break
+                }
+
+                // scroll to the episode that is currently playing
+                const activeItem = contentDiv.querySelector('.selectedListItem')
+                if (!activeItem) {
+                    logger.error("Couldn't find active media source element in preview list. This should never happen", programDataStore)
+                }
+                activeItem?.parentElement.scrollIntoView()
+            }
+
             popupTitle.render((e: MouseEvent) => {
                 e.stopPropagation()
-                
-                popupTitle.setVisible(false);
-                const contentDiv: HTMLElement = document.getElementById('popupContentContainer')
-
-                // delete episode content for all existing episodes in the preview list;
-                contentDiv.innerHTML = ''
-                
-                listElementFactory.createSeasonElements(programDataStore.seasons, contentDiv, programDataStore.activeSeason.IndexNumber, popupTitle)
+                renderSeasonList()
             })
 
-            switch (programDataStore.type) {
-                case ItemType.Series:
-                    popupTitle.setText(programDataStore.activeSeason.seasonName)
-                    popupTitle.setVisible(true)
-                    listElementFactory.createEpisodeElements(programDataStore.activeSeason.episodes, contentDiv)
-                    break
-                case ItemType.Movie:
-                    popupTitle.setText('')
-                    popupTitle.setVisible(false)
-                    listElementFactory.createEpisodeElements(programDataStore.movies.filter(movie => movie.Id === programDataStore.activeMediaSourceId), contentDiv)
-                    break
-                case ItemType.Video:
-                    popupTitle.setText('')
-                    popupTitle.setVisible(false)
-                    listElementFactory.createEpisodeElements(programDataStore.movies, contentDiv)
-                    break
-                case ItemType.BoxSet:
-                case ItemType.Folder:
-                    popupTitle.setText(programDataStore.boxSetName)
-                    popupTitle.setVisible(true)
-                    listElementFactory.createEpisodeElements(programDataStore.movies, contentDiv)
-                    break
-            }
-            
-            // scroll to the episode that is currently playing
-            const activeItem = contentDiv.querySelector('.selectedListItem') 
-            if (!activeItem) {
-                logger.error("Couldn't find active media source element in preview list. This should never happen", programDataStore)
-            }
-            activeItem?.parentElement.scrollIntoView()
+            renderEpisodeList()
+
+            if (playbackStateUnsubscribe)
+                playbackStateUnsubscribe()
+            playbackStateUnsubscribe = programDataStore.subscribePlaybackStateChanged(() => {
+                if (showingSeasonList)
+                    return
+                if (!document.getElementById('popupContentContainer'))
+                    return
+                renderEpisodeList()
+            })
         }
     }
     function unloadVideoView(): void {
@@ -220,6 +250,10 @@ function viewShowEventHandler(): void {
             document.body.removeChild(document.getElementById("dialogContainer"))
         
         previewContainerLoaded = false // Reset flag when unloading
+        if (playbackStateUnsubscribe) {
+            playbackStateUnsubscribe()
+            playbackStateUnsubscribe = null
+        }
     }
     
     function isPreviewButtonCreated(): boolean {

@@ -4,7 +4,7 @@ import {BaseItem} from "../../Models/Episode"
 export class PlayStateIconTemplate extends BaseTemplate {
     constructor(container: HTMLElement, positionAfterIndex: number, private episode: BaseItem) {
         super(container, positionAfterIndex)
-        this.setElementId('playStateButton-' + this.episode.IndexNumber)
+        this.setElementId('playStateButton-' + this.episode.Id)
     }
 
     getTemplate(): string {

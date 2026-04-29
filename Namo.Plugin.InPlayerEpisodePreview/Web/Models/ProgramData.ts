@@ -8,6 +8,9 @@ export type ProgramData = {
     activeMediaSourceId: string
     type: ItemType
     boxSetName: string
+    playbackOrder: "Default" | "Shuffle" | string
+    nowPlayingQueueIds: string[]
+    nowPlayingQueueVersion?: number | string
     movies?: BaseItem[]
     seasons?: Season[]
     pluginSettings: PluginSettings,

@@ -14,7 +14,7 @@ export class ListElementTemplate extends BaseTemplate {
 
     constructor(container: HTMLElement, positionAfterIndex: number, private item: BaseItem, private playbackHandler: PlaybackHandler, private programDataStore: ProgramDataStore) {
         super(container, positionAfterIndex)
-        this.setElementId(`episode-${item.IndexNumber}`)
+        this.setElementId(`episode-${item.Id}`)
 
         // create temp quick action container
         this.quickActionContainer = document.createElement('div')
@@ -38,10 +38,10 @@ export class ListElementTemplate extends BaseTemplate {
 
         // language=HTML
         return `
-            <div id="${this.getElementId()}"
-                 class="listItem listItem-button actionSheetMenuItem emby-button previewListItem"
-                 is="emby-button"
-                 data-id="${this.item.IndexNumber}">
+             <div id="${this.getElementId()}"
+                  class="listItem listItem-button actionSheetMenuItem emby-button previewListItem"
+                  is="emby-button"
+                  data-id="${this.item.Id}">
                 <div class="previewEpisodeContainer flex">
                     <button class="listItem previewEpisodeTitle" type="button">
                         ${(
@@ -66,7 +66,7 @@ export class ListElementTemplate extends BaseTemplate {
                                     <div class="cardPadder cardPadder-overflowBackdrop lazy-hidden-children">
                                         <span class="cardImageIcon material-icons tv" aria-hidden="true"/>
                                     </div>
-                                    <button id="previewEpisodeImageCard-${this.item.IndexNumber}"
+                                    <button id="previewEpisodeImageCard-${this.item.Id}"
                                             class="cardImageContainer cardContent itemAction lazy blurhashed lazy-image-fadein-fast ${this.programDataStore.pluginSettings.BlurThumbnail ? 'blur' : ''}"
                                             data-action="link"
                                             style="${backgroundImageStyle}">
@@ -81,7 +81,7 @@ export class ListElementTemplate extends BaseTemplate {
                                     ${this.item.Id !== this.programDataStore.activeMediaSourceId ? 
                                         `<div class="cardOverlayContainer itemAction"
                                              data-action="link">
-                                            <button id="start-episode-${this.item.IndexNumber}"
+                                            <button id="start-episode-${this.item.Id}"
                                                     is="paper-icon-button-light"
                                                     class="cardOverlayButton cardOverlayButton-hover itemAction paper-icon-button-light cardOverlayFab-primary"
                                                     data-action="resume">
@@ -108,7 +108,7 @@ export class ListElementTemplate extends BaseTemplate {
 
         if (this.item.Id !== this.programDataStore.activeMediaSourceId) {
             // add event handler to start the playback of this episode
-            const episodeImageCard: HTMLElement = document.getElementById(`start-episode-${this.item.IndexNumber}`)
+            const episodeImageCard: HTMLElement = document.getElementById(`start-episode-${this.item.Id}`)
             episodeImageCard.addEventListener('click', () => this.playbackHandler.play(this.item.Id, this.item.UserData.PlaybackPositionTicks))
         }
     }

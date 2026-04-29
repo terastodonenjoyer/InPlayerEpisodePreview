@@ -11,10 +11,10 @@ export class ListElementFactory {
     constructor(private playbackHandler: PlaybackHandler, private programDataStore: ProgramDataStore) { }
     
     public async createEpisodeElements(episodes: BaseItem[], parentDiv: HTMLElement): Promise<void> {
-        episodes.sort((a, b) => a.IndexNumber - b.IndexNumber)
+        const displayEpisodes = this.resolveDisplayEpisodes(episodes)
         
-        for (let i: number = 0; i < episodes.length; i++) {
-            const episode = episodes[i]
+        for (let i: number = 0; i < displayEpisodes.length; i++) {
+            const episode = displayEpisodes[i]
             const episodeListElementTemplate = new ListElementTemplate(parentDiv, i, episode, this.playbackHandler, this.programDataStore);
             episodeListElementTemplate.render(async (e: MouseEvent) => {
                 e.stopPropagation();
@@ -25,7 +25,7 @@ export class ListElementFactory {
                     element.classList.remove('selectedListItem');
                 });
                 
-                const episodeContainer: Element = document.querySelector(`[data-id="${episode.IndexNumber}"]`).querySelector('.previewListItemContent');
+                const episodeContainer: Element = document.querySelector(`[data-id="${episode.Id}"]`).querySelector('.previewListItemContent');
                 
                 // load episode description
                 if (!episode.Description) {
@@ -50,7 +50,7 @@ export class ListElementFactory {
             });
 
             if (episode.Id === this.programDataStore.activeMediaSourceId) {
-                const episodeNode: Element = document.querySelector(`[data-id="${episode.IndexNumber}"]`).querySelector('.previewListItemContent');
+                const episodeNode: Element = document.querySelector(`[data-id="${episode.Id}"]`).querySelector('.previewListItemContent');
                 
                 // preload episode description for the currently playing episode
                 if (!episode.Description) {
@@ -87,5 +87,22 @@ export class ListElementFactory {
                 this.createEpisodeElements(seasons[i].episodes, parentDiv).then();
             });
         }
+    }
+
+    private resolveDisplayEpisodes(episodes: BaseItem[]): BaseItem[] {
+        const queueIds: string[] = this.programDataStore.nowPlayingQueueIds ?? []
+        if (this.programDataStore.isShuffleActive() && queueIds.length > 0) {
+            const episodeMap = new Map<string, BaseItem>(episodes.map((episode: BaseItem): [string, BaseItem] => [episode.Id, episode]))
+            return queueIds
+                .map((id: string): BaseItem => episodeMap.get(id))
+                .filter((episode): episode is BaseItem => Boolean(episode))
+        }
+
+        return [...episodes].sort((a, b) => {
+            const parentCompare: number = (a.ParentIndexNumber ?? 0) - (b.ParentIndexNumber ?? 0)
+            if (parentCompare !== 0)
+                return parentCompare
+            return (a.IndexNumber ?? 0) - (b.IndexNumber ?? 0)
+        })
     }
 }

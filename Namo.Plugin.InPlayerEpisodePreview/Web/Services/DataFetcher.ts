@@ -4,7 +4,7 @@ import {Logger} from "./Logger";
 import {BaseItem, ItemDto} from "../Models/Episode";
 import {Season} from "../Models/Season";
 import {ItemType} from "../Models/ItemType";
-import {PlaybackProgressInfo} from "../Models/PlaybackProgressInfo";
+import {PlaybackOrder, PlaybackProgressInfo} from "../Models/PlaybackProgressInfo";
 
 /**
  * The classes which derives from this interface, will provide the functionality to handle the data input from the server if the PlaybackState is changed.
@@ -38,6 +38,17 @@ export class DataFetcher {
                 // save the media id of the currently played video
                 if (this.programDataStore.activeMediaSourceId !== playingInfo.MediaSourceId)
                     this.programDataStore.activeMediaSourceId = playingInfo.MediaSourceId
+
+                const playbackOrderRaw = playingInfo.PlaybackOrder
+                const playbackOrder: string = (typeof playbackOrderRaw === 'number'
+                    ? PlaybackOrder[playbackOrderRaw]
+                    : String(playbackOrderRaw ?? 'Default')) ?? String(playbackOrderRaw ?? 'Default')
+                const nowPlayingQueueIds: string[] = (playingInfo.NowPlayingQueue ?? [])
+                    .map((queueItem) => queueItem?.Id)
+                    .filter((id): id is string => Boolean(id))
+                this.programDataStore.setPlaybackOrder(playbackOrder)
+                this.programDataStore.setNowPlayingQueue(nowPlayingQueueIds)
+                void this.programDataStore.ensureItemsLoadedByIds(nowPlayingQueueIds)
 
                 // Endpoint: /Sessions/Playing/Progress
                 if (urlPathname.includes('Progress')) {
