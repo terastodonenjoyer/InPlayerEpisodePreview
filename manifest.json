@@ -9,6 +9,22 @@
     "imageUrl": "https://raw.githubusercontent.com/Namo2/InPlayerEpisodePreview/refs/heads/master/Images/logo.png",
     "versions": [
       {
+        "version": "1.6.2.2",
+        "changelog": "- Show shuffle queue order in the episode list.\n - Use stable item IDs for DOM selectors.\n - Load missing queue items on shuffle.",
+        "targetAbi": "10.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/terastodonenjoyer/InPlayerEpisodePreview/master/releases/InPlayerEpisodePreview_1.6.2.2-10.11.0.zip",
+        "checksum": "b87f5c48b3855637060c0321a9aaa5be",
+        "timestamp": "2026-04-30T23:35:00Z"
+      },
+      {
+        "version": "1.6.2.1",
+        "changelog": "- Show shuffle queue order in the episode list.\n - Use stable item IDs for DOM selectors.\n - Load missing queue items on shuffle.",
+        "targetAbi": "10.10.7",
+        "sourceUrl": "https://raw.githubusercontent.com/terastodonenjoyer/InPlayerEpisodePreview/master/releases/InPlayerEpisodePreview_1.6.2.1-10.10.7.zip",
+        "checksum": "c734df5b1ea815a99d12e0957ae7b325",
+        "timestamp": "2026-04-30T23:35:00Z"
+      },
+      {
         "version": "1.6.1.2",
         "changelog": "- Fixed a bug where movies with multiple versions were treated as collections",
         "targetAbi": "10.11.0",
