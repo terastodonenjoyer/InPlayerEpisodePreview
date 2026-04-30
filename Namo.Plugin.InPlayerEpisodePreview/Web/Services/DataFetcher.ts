@@ -35,9 +35,10 @@ export class DataFetcher {
             if (config.body && typeof config.body === 'string' && urlPathname.includes('Sessions/Playing')) {
                 const playingInfo: PlaybackProgressInfo = JSON.parse(config.body)
 
-                // save the media id of the currently played video
-                if (this.programDataStore.activeMediaSourceId !== playingInfo.MediaSourceId)
-                    this.programDataStore.activeMediaSourceId = playingInfo.MediaSourceId
+                // save the item id of the currently played video
+                const activeItemId: string = playingInfo.ItemId ?? playingInfo.Item?.Id ?? playingInfo.MediaSourceId
+                if (activeItemId && this.programDataStore.activeMediaSourceId !== activeItemId)
+                    this.programDataStore.activeMediaSourceId = activeItemId
 
                 const playbackOrderRaw = playingInfo.PlaybackOrder as unknown as PlaybackOrder | string
                 const playbackOrderFromEnum = typeof playbackOrderRaw === 'number'
@@ -54,7 +55,7 @@ export class DataFetcher {
                 // Endpoint: /Sessions/Playing/Progress
                 if (urlPathname.includes('Progress')) {
                     // update the playback progress of the currently played video
-                    const episode: BaseItem = this.programDataStore.getItemById(playingInfo.MediaSourceId)
+                    const episode: BaseItem = this.programDataStore.getItemById(activeItemId)
                     if (episode) {
                         const playedPercentage = episode.RunTimeTicks > 0 ? (playingInfo.PositionTicks / episode.RunTimeTicks) * 100 : 0
                         const played = playedPercentage >= this.programDataStore.serverSettings.MaxResumePct

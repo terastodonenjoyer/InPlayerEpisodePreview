@@ -2,7 +2,194 @@
 
 Begonnen: 2026-04-29  
 Ziel: Shuffle-Queue-Reihenfolge + stabile ID-Keys im InPlayerEpisodePreview  
+Status: **IN BEARBEITUNG**
+
+---
+
+## 01.05.2026 — Preview nicht sichtbar
+
+### Auftrag
+InPlayerEpisodePreview wird im Player nicht angezeigt (weder Shuffle noch Normalmodus).
+
+### Konzept
+- Aktives Element anhand von `PlaybackProgressInfo.ItemId` statt `MediaSourceId` bestimmen.
+- `activeSeason`/`dataIsAllowedForPreview` robust gegen fehlende Season-Daten machen.
+- Preview-Renderpfad auf fehlende aktive Season absichern und Bundle neu bauen.
+
+### Betroffene Dateien
+| Datei | Geplante Änderung |
+|-------|-------------------|
+| `CHECKIN.md` | Neuer CHECKIN/Checkout-Eintrag |
+| `CHECKPOINT.md` | Task-Eintrag + Änderungsprotokoll |
+| `Web/Services/DataFetcher.ts` | Aktives Item per `ItemId` setzen (Fallback) |
+| `Web/Services/ProgramDataStore.ts` | `activeSeason`/`dataIsAllowedForPreview` absichern |
+| `Web/InPlayerPreview.ts` | Preview-Render-Guards für fehlende Season |
+| `Web/InPlayerPreview.js` | Bundle-Rebuild |
+
+### Änderungen
+| Zeitstempel | Datei:Zeile | Beschreibung |
+|-------------|-------------|--------------|
+| 01.05.2026 01:55:37:493 | `CHECKIN.md:1` | CHECKIN für Preview-Fehler ergänzt |
+| 01.05.2026 01:55:51:742 | `CHECKPOINT.md:5-33` | Task-Header ergänzt, Status auf IN BEARBEITUNG gesetzt |
+| 01.05.2026 01:56:22:128 | `Web/Services/DataFetcher.ts:38-58` | Aktives Item via ItemId gesetzt, Progress-Update nutzt ItemId |
+| 01.05.2026 01:56:45:594 | `Web/Services/ProgramDataStore.ts:35-139` | `activeSeason` fallback + Preview-Guard für fehlende Season |
+| 01.05.2026 01:56:54:272 | `Web/InPlayerPreview.ts:171-207` | Season-Rendering gegen fehlende activeSeason abgesichert |
+| 01.05.2026 01:57:53:484 | `Web/Services/ProgramDataStore.ts:35-139` | `activeSeason` liefert Default-Season statt `undefined` |
+| 01.05.2026 01:58:24:849 | `Web/InPlayerPreview.js` | Bundle via webpack aktualisiert (TS-Fehler vorhanden) |
+
+**Detail:**
+```markdown
+# ALT (CHECKPOINT.md:5)
 Status: **ABGESCHLOSSEN**
+
+# NEU (CHECKPOINT.md:5)
+Status: **IN BEARBEITUNG**
+```
+
+**Detail:**
+```text
+# NEU (CHECKIN.md:1)
+CHECKIN ; 01.05.2026 01:55:37:493 (MEZ) ; *Now i dont see the inplayer episode preview at all. Neither randomized nor normal.* ;
+```
+
+**Detail:**
+```ts
+// ALT (Web/Services/DataFetcher.ts:38-58)
+// save the media id of the currently played video
+if (this.programDataStore.activeMediaSourceId !== playingInfo.MediaSourceId)
+    this.programDataStore.activeMediaSourceId = playingInfo.MediaSourceId
+...
+const episode: BaseItem = this.programDataStore.getItemById(playingInfo.MediaSourceId)
+
+// NEU (Web/Services/DataFetcher.ts:38-58)
+// save the item id of the currently played video
+const activeItemId: string = playingInfo.ItemId ?? playingInfo.Item?.Id ?? playingInfo.MediaSourceId
+if (activeItemId && this.programDataStore.activeMediaSourceId !== activeItemId)
+    this.programDataStore.activeMediaSourceId = activeItemId
+...
+const episode: BaseItem = this.programDataStore.getItemById(activeItemId)
+```
+
+**Detail:**
+```ts
+// ALT (Web/Services/ProgramDataStore.ts:35-139)
+public get activeSeason(): Season {
+    return this.seasons.find(season => season.episodes.some(episode => episode.Id === this.activeMediaSourceId))
+}
+...
+case ItemType.Series:
+    return this.activeSeason.episodes.length >= 1
+
+// NEU (Web/Services/ProgramDataStore.ts:35-139)
+public get activeSeason(): Season | undefined {
+    return this.seasons.find(season => season.episodes.some(episode => episode.Id === this.activeMediaSourceId))
+        ?? this.seasons.at(0)
+}
+...
+case ItemType.Series: {
+    const activeSeason = this.activeSeason
+    return Boolean(activeSeason && activeSeason.episodes.length >= 1)
+}
+```
+
+**Detail:**
+```ts
+// ALT (Web/InPlayerPreview.ts:171-207)
+const renderSeasonList = (): void => {
+    showingSeasonList = true
+    popupTitle.setVisible(false)
+    contentDiv.innerHTML = ''
+    listElementFactory.createSeasonElements(programDataStore.seasons, contentDiv, programDataStore.activeSeason.IndexNumber, popupTitle)
+}
+...
+popupTitle.setText(programDataStore.activeSeason.seasonName)
+popupTitle.setVisible(true)
+listElementFactory.createEpisodeElements(programDataStore.activeSeason.episodes, contentDiv)
+
+// NEU (Web/InPlayerPreview.ts:171-207)
+const renderSeasonList = (): void => {
+    const activeSeason = programDataStore.activeSeason
+    if (!activeSeason) {
+        logger.error('No active season data available for preview list.', programDataStore)
+        return
+    }
+    showingSeasonList = true
+    popupTitle.setVisible(false)
+    contentDiv.innerHTML = ''
+    listElementFactory.createSeasonElements(programDataStore.seasons, contentDiv, activeSeason.IndexNumber, popupTitle)
+}
+...
+const activeSeason = programDataStore.activeSeason
+if (!activeSeason) {
+    logger.error('No active season data available for preview list.', programDataStore)
+    break
+}
+popupTitle.setText(activeSeason.seasonName)
+popupTitle.setVisible(true)
+listElementFactory.createEpisodeElements(activeSeason.episodes, contentDiv)
+```
+
+**Detail:**
+```ts
+// ALT (Web/Services/ProgramDataStore.ts:35-139)
+public get activeSeason(): Season | undefined {
+    return this.seasons.find(season => season.episodes.some(episode => episode.Id === this.activeMediaSourceId))
+        ?? this.seasons.at(0)
+}
+...
+case ItemType.Series: {
+    const activeSeason = this.activeSeason
+    return Boolean(activeSeason && activeSeason.episodes.length >= 1)
+}
+
+// NEU (Web/Services/ProgramDataStore.ts:35-139)
+public get activeSeason(): Season {
+    return this.seasons.find(season => season.episodes.some(episode => episode.Id === this.activeMediaSourceId))
+        ?? this.seasons[0]
+        ?? {
+            seasonId: '',
+            seasonName: '',
+            episodes: [],
+            IndexNumber: 0
+        }
+}
+...
+case ItemType.Series:
+    return this.activeSeason.episodes.length >= 1
+```
+
+**Detail:**
+```text
+// ALT (Web/InPlayerPreview.js)
+Bundle vor Änderungen
+
+// NEU (Web/InPlayerPreview.js)
+Bundle via `npx webpack --config webpack.config.js` aktualisiert
+```
+
+### Ergebnis
+- Aktives Preview-Item basiert auf `ItemId`; Preview sollte wieder erscheinen (Shuffle + Normal).
+- Season-Zugriffe sind gegen fehlende Daten abgesichert; leere Season-Daten blockieren die UI nicht.
+
+### Was NICHT geändert wurde
+- Plugin-Konfiguration/Settings-UI unverändert.
+- Playback/Resume-Logik außerhalb der Active-Item-Zuordnung unverändert.
+- CSS/Styles der Preview-UI unverändert.
+
+### Neue Tests
+| Test-Klasse | Test-Methode | Prüft |
+|-------------|-------------|-------|
+| — | — | Keine Testsuite im Repo vorhanden |
+
+### Testlauf
+```
+01.05.2026 01:58:58 — dotnet build InPlayerEpisodePreview.sln
+Build succeeded.
+```
+```
+01.05.2026 01:58:24 — npx webpack --config webpack.config.js
+webpack 5.106.2 compiled with 54 errors (vorhandene TS-Strictness-Fehler in DataFetcher/ProgramDataStore)
+```
 
 ---
 

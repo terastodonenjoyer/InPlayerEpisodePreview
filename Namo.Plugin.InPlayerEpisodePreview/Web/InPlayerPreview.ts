@@ -169,10 +169,15 @@ function viewShowEventHandler(): void {
             let showingSeasonList: boolean = false
 
             const renderSeasonList = (): void => {
+                const activeSeason = programDataStore.activeSeason
+                if (!activeSeason) {
+                    logger.error('No active season data available for preview list.', programDataStore)
+                    return
+                }
                 showingSeasonList = true
                 popupTitle.setVisible(false)
                 contentDiv.innerHTML = ''
-                listElementFactory.createSeasonElements(programDataStore.seasons, contentDiv, programDataStore.activeSeason.IndexNumber, popupTitle)
+                listElementFactory.createSeasonElements(programDataStore.seasons, contentDiv, activeSeason.IndexNumber, popupTitle)
             }
 
             const renderEpisodeList = (): void => {
@@ -191,9 +196,14 @@ function viewShowEventHandler(): void {
                             break
                         }
 
-                        popupTitle.setText(programDataStore.activeSeason.seasonName)
+                        const activeSeason = programDataStore.activeSeason
+                        if (!activeSeason) {
+                            logger.error('No active season data available for preview list.', programDataStore)
+                            break
+                        }
+                        popupTitle.setText(activeSeason.seasonName)
                         popupTitle.setVisible(true)
-                        listElementFactory.createEpisodeElements(programDataStore.activeSeason.episodes, contentDiv)
+                        listElementFactory.createEpisodeElements(activeSeason.episodes, contentDiv)
                         break
                     }
                     case ItemType.Movie:

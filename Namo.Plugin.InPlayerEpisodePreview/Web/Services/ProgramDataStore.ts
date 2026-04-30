@@ -34,6 +34,13 @@ export class ProgramDataStore {
 
     public get activeSeason(): Season {
         return this.seasons.find(season => season.episodes.some(episode => episode.Id === this.activeMediaSourceId))
+            ?? this.seasons[0]
+            ?? {
+                seasonId: '',
+                seasonName: '',
+                episodes: [],
+                IndexNumber: 0
+            }
     }
     
     public get type(): ItemType {
