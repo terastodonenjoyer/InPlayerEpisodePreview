@@ -5,7 +5,7 @@
       <JellyfinVersion>10.11.0</JellyfinVersion>
       <TargetFramework Condition="$(JellyfinVersion.StartsWith('10.11'))">net9.0</TargetFramework>
       <TargetFramework Condition="'$(JellyfinVersion)' == '10.10.7'">net8.0</TargetFramework>
-      <PluginVersion>1.6.1</PluginVersion>
+      <PluginVersion>1.6.2</PluginVersion>
       <AssemblyVersion Condition="$(JellyfinVersion.StartsWith('10.10'))">$(PluginVersion).1</AssemblyVersion>
       <FileVersion Condition="$(JellyfinVersion.StartsWith('10.10'))">$(PluginVersion).1</FileVersion>
       <Version Condition="$(JellyfinVersion.StartsWith('10.10'))">$(PluginVersion).1</Version>

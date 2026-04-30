@@ -6,6 +6,137 @@ Status: **ABGESCHLOSSEN**
 
 ---
 
+## 01.05.2026 — Manifest Release Update
+
+### Auftrag
+Manifest.json aktualisieren, damit die in CHECKPOINT dokumentierten Shuffle-/Queue-Änderungen als installierbare Version im Repo verfügbar sind und Jellyfin die Erweiterung anzeigen kann.
+
+### Konzept
+- Plugin-Version auf 1.6.2 anheben, damit neue Release-IDs für 10.11.0/10.10.7 erzeugt werden.
+- Release-ZIPs für beide Ziel-ABIs bauen, unter `releases/` versioniert ablegen, MD5-Checksummen ermitteln.
+- Manifest-Einträge (Changelog, URLs, Checksums, Timestamp) ergänzen.
+
+### Betroffene Dateien
+| Datei | Geplante Änderung |
+|-------|-------------------|
+| `CHECKIN.md` | Neuer CHECKIN/Checkout-Eintrag |
+| `CHECKPOINT.md` | Neuer Task-Eintrag + Änderungsprotokoll |
+| `Namo.Plugin.InPlayerEpisodePreview/Namo.Plugin.InPlayerEpisodePreview.csproj` | Plugin-Version anheben |
+| `manifest.json` | Neue Versionsblöcke für 10.11.0/10.10.7 |
+| `releases/` | Neue Release-ZIP-Artefakte |
+
+### Änderungen
+| Zeitstempel | Datei:Zeile | Beschreibung |
+|-------------|-------------|--------------|
+| 01.05.2026 00:26:23:421 | `CHECKIN.md:1` | CHECKIN für Manifest-Update ergänzt |
+| 01.05.2026 00:28:10:000 | `CHECKPOINT.md:5-32` | Task-Header ergänzt, Status auf IN BEARBEITUNG gesetzt |
+| 01.05.2026 00:30:20:000 | `Namo.Plugin.InPlayerEpisodePreview.csproj:8` | PluginVersion auf 1.6.2 angehoben |
+| 01.05.2026 00:35:10:000 | `releases/InPlayerEpisodePreview_1.6.2.2-10.11.0.zip` | Release-ZIP für Jellyfin 10.11.0 erstellt |
+| 01.05.2026 00:35:20:000 | `releases/InPlayerEpisodePreview_1.6.2.1-10.10.7.zip` | Release-ZIP für Jellyfin 10.10.7 erstellt |
+| 01.05.2026 00:36:30:000 | `manifest.json:11-34` | Neue Versionsblöcke 1.6.2.2/1.6.2.1 ergänzt |
+| 01.05.2026 00:38:30:000 | `CHECKPOINT.md:60-90` | Ergebnis/Testlauf/Tests ergänzt |
+| 01.05.2026 00:40:30:000 | `CHECKPOINT.md:5` | Status auf ABGESCHLOSSEN gesetzt |
+| 01.05.2026 00:41:30:000 | `CHECKIN.md:1` | CHECKOUT-Eintrag ergänzt |
+
+**Detail:**
+```markdown
+# ALT (CHECKPOINT.md:5)
+Status: **ABGESCHLOSSEN**
+
+# NEU (CHECKPOINT.md:5)
+Status: **IN BEARBEITUNG**
+```
+
+**Detail:**
+```text
+# NEU (CHECKIN.md:1)
+CHECKIN ; 01.05.2026 00:26:23:421 (MEZ) ; *I cannot see the Plugin in Jellyfin after adding "@terastodonenjoyer/InPlayerEpisodePreview/files/manifest.json" as repo. Also the previous changes documented in the "Checkpoint.md" have not been added to manifest.json.* ;
+```
+
+**Detail:**
+```xml
+# ALT (Namo.Plugin.InPlayerEpisodePreview.csproj:8)
+<PluginVersion>1.6.1</PluginVersion>
+
+# NEU (Namo.Plugin.InPlayerEpisodePreview.csproj:8)
+<PluginVersion>1.6.2</PluginVersion>
+```
+
+**Detail:**
+```text
+# NEU (releases/)
+InPlayerEpisodePreview_1.6.2.2-10.11.0.zip
+InPlayerEpisodePreview_1.6.2.1-10.10.7.zip
+```
+
+**Detail:**
+```markdown
+# ALT (CHECKPOINT.md:5)
+Status: **IN BEARBEITUNG**
+
+# NEU (CHECKPOINT.md:5)
+Status: **ABGESCHLOSSEN**
+```
+
+**Detail:**
+```text
+# NEU (CHECKIN.md:1)
+CHECKOUT ; 01.05.2026 00:41:30:000 (MEZ) ; *Manifest aktualisiert, Release-ZIPs 1.6.2.x erzeugt, Builds/webpack erfolgreich* ;
+```
+
+**Detail:**
+```json
+// ALT (manifest.json:11-18)
+{
+  "version": "1.6.1.2",
+  "changelog": "- Fixed a bug where movies with multiple versions were treated as collections",
+  "targetAbi": "10.11.0",
+  "sourceUrl": "https://github.com/Namo2/InPlayerEpisodePreview/releases/download/v1.6.1/InPlayerEpisodePreview_1.6.1.2-10.11.0.zip",
+  "checksum": "94d14a0a95bb3d5d76342ac4e00a26d0",
+  "timestamp": "2025-12-11T21:37:25Z"
+}
+
+// NEU (manifest.json:11-26)
+{
+  "version": "1.6.2.2",
+  "changelog": "- Show shuffle queue order in the episode list.\n - Use stable item IDs for DOM selectors.\n - Load missing queue items on shuffle.",
+  "targetAbi": "10.11.0",
+  "sourceUrl": "https://raw.githubusercontent.com/terastodonenjoyer/InPlayerEpisodePreview/master/releases/InPlayerEpisodePreview_1.6.2.2-10.11.0.zip",
+  "checksum": "b87f5c48b3855637060c0321a9aaa5be",
+  "timestamp": "2026-04-30T23:35:00Z"
+}
+```
+
+### Ergebnis
+- Manifest enthält neue Versionen 1.6.2.2 (10.11.0) und 1.6.2.1 (10.10.7).
+- Release-ZIPs liegen im Repo unter `releases/` und sind per Raw-URL abrufbar.
+- Plugin sollte im Jellyfin-Repo sichtbar sein, sofern die Raw-Manifest-URL genutzt wird.
+
+### Was NICHT geändert wurde
+- C#-Plugin-Logik, UI-Features, Web-Bundle-Inhalt — unverändert (nur Versionierung/Packaging).
+- Bestehende Einstellungen/Config-Struktur — unangetastet.
+
+### Neue Tests
+| Test-Klasse | Test-Methode | Prüft |
+|-------------|-------------|-------|
+| — | — | Keine neuen Tests erforderlich (Manifest/Packaging-Änderung) |
+
+### Testlauf
+```
+01.05.2026 00:34:10 — dotnet build InPlayerEpisodePreview.sln -c Release
+Build succeeded.
+```
+```
+01.05.2026 00:34:40 — dotnet build InPlayerEpisodePreview.sln -c Release -p:JellyfinVersion=10.10.7
+Build succeeded.
+```
+```
+01.05.2026 00:37:10 — npx webpack --config webpack.config.js
+webpack 5.106.2 compiled successfully
+```
+
+---
+
 ## 29.04.2026 — Shuffle Queue Order & Stable IDs
 
 ### Auftrag
