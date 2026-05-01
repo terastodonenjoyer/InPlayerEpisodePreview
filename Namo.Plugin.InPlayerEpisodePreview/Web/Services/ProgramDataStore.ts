@@ -8,6 +8,12 @@ import {DefaultServerSettings, ServerSettings} from "../Models/ServerSettings";
 export class ProgramDataStore {
     private _programData: ProgramData
     private playbackStateListeners: Set<() => void> = new Set()
+    private static readonly EMPTY_SEASON: Season = {
+        seasonId: '',
+        seasonName: '',
+        episodes: [],
+        IndexNumber: 0
+    }
 
     constructor() {
         this._programData = {
@@ -35,12 +41,7 @@ export class ProgramDataStore {
     public get activeSeason(): Season {
         return this.seasons.find(season => season.episodes.some(episode => episode.Id === this.activeMediaSourceId))
             ?? this.seasons[0]
-            ?? {
-                seasonId: '',
-                seasonName: '',
-                episodes: [],
-                IndexNumber: 0
-            }
+            ?? ProgramDataStore.EMPTY_SEASON
     }
     
     public get type(): ItemType {

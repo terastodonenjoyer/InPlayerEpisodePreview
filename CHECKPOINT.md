@@ -36,6 +36,9 @@ InPlayerEpisodePreview wird im Player nicht angezeigt (weder Shuffle noch Normal
 | 01.05.2026 01:56:54:272 | `Web/InPlayerPreview.ts:171-207` | Season-Rendering gegen fehlende activeSeason abgesichert |
 | 01.05.2026 01:57:53:484 | `Web/Services/ProgramDataStore.ts:35-139` | `activeSeason` liefert Default-Season statt `undefined` |
 | 01.05.2026 01:58:24:849 | `Web/InPlayerPreview.js` | Bundle via webpack aktualisiert (TS-Fehler vorhanden) |
+| 01.05.2026 02:00:17:582 | `Web/Services/ProgramDataStore.ts:11-43` | `EMPTY_SEASON`-Konstante für Default-Season ergänzt |
+| 01.05.2026 02:00:20:545 | `Web/InPlayerPreview.ts:171-212` | `getActiveSeason()` zentralisiert Season-Validierung |
+| 01.05.2026 02:00:46:722 | `Web/InPlayerPreview.js` | Bundle nach Helper-Änderung aktualisiert (TS-Fehler vorhanden) |
 
 **Detail:**
 ```markdown
@@ -167,6 +170,88 @@ Bundle vor Änderungen
 Bundle via `npx webpack --config webpack.config.js` aktualisiert
 ```
 
+**Detail:**
+```ts
+// ALT (Web/Services/ProgramDataStore.ts:11-43)
+private playbackStateListeners: Set<() => void> = new Set()
+...
+return this.seasons.find(season => season.episodes.some(episode => episode.Id === this.activeMediaSourceId))
+    ?? this.seasons[0]
+    ?? {
+        seasonId: '',
+        seasonName: '',
+        episodes: [],
+        IndexNumber: 0
+    }
+
+// NEU (Web/Services/ProgramDataStore.ts:11-43)
+private playbackStateListeners: Set<() => void> = new Set()
+private static readonly EMPTY_SEASON: Season = {
+    seasonId: '',
+    seasonName: '',
+    episodes: [],
+    IndexNumber: 0
+}
+...
+return this.seasons.find(season => season.episodes.some(episode => episode.Id === this.activeMediaSourceId))
+    ?? this.seasons[0]
+    ?? ProgramDataStore.EMPTY_SEASON
+```
+
+**Detail:**
+```ts
+// ALT (Web/InPlayerPreview.ts:171-212)
+const renderSeasonList = (): void => {
+    const activeSeason = programDataStore.activeSeason
+    if (!activeSeason) {
+        logger.error('No active season data available for preview list.', programDataStore)
+        return
+    }
+    showingSeasonList = true
+    popupTitle.setVisible(false)
+    contentDiv.innerHTML = ''
+    listElementFactory.createSeasonElements(programDataStore.seasons, contentDiv, activeSeason.IndexNumber, popupTitle)
+}
+...
+const activeSeason = programDataStore.activeSeason
+if (!activeSeason) {
+    logger.error('No active season data available for preview list.', programDataStore)
+    break
+}
+popupTitle.setText(activeSeason.seasonName)
+popupTitle.setVisible(true)
+listElementFactory.createEpisodeElements(activeSeason.episodes, contentDiv)
+
+// NEU (Web/InPlayerPreview.ts:171-212)
+const getActiveSeason = () => {
+    if (programDataStore.seasons.length === 0) {
+        logger.error('No active season data available for preview list.', programDataStore)
+        return null
+    }
+    return programDataStore.activeSeason
+}
+...
+const activeSeason = getActiveSeason()
+if (!activeSeason)
+    return
+...
+const activeSeason = getActiveSeason()
+if (!activeSeason)
+    break
+popupTitle.setText(activeSeason.seasonName)
+popupTitle.setVisible(true)
+listElementFactory.createEpisodeElements(activeSeason.episodes, contentDiv)
+```
+
+**Detail:**
+```text
+// ALT (Web/InPlayerPreview.js)
+Bundle vor Helper-Änderung
+
+// NEU (Web/InPlayerPreview.js)
+Bundle via `npx webpack --config webpack.config.js` aktualisiert
+```
+
 ### Ergebnis
 - Aktives Preview-Item basiert auf `ItemId`; Preview sollte wieder erscheinen (Shuffle + Normal).
 - Season-Zugriffe sind gegen fehlende Daten abgesichert; leere Season-Daten blockieren die UI nicht.
@@ -188,6 +273,10 @@ Build succeeded.
 ```
 ```
 01.05.2026 01:58:24 — npx webpack --config webpack.config.js
+webpack 5.106.2 compiled with 54 errors (vorhandene TS-Strictness-Fehler in DataFetcher/ProgramDataStore)
+```
+```
+01.05.2026 02:00:46 — npx webpack --config webpack.config.js
 webpack 5.106.2 compiled with 54 errors (vorhandene TS-Strictness-Fehler in DataFetcher/ProgramDataStore)
 ```
 

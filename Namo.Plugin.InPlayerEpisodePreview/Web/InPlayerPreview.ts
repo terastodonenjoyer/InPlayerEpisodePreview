@@ -168,12 +168,18 @@ function viewShowEventHandler(): void {
             const popupTitle: PopupTitleTemplate = new PopupTitleTemplate(document.getElementById('popupFocusContainer'), -1, programDataStore)
             let showingSeasonList: boolean = false
 
-            const renderSeasonList = (): void => {
-                const activeSeason = programDataStore.activeSeason
-                if (!activeSeason) {
+            const getActiveSeason = () => {
+                if (programDataStore.seasons.length === 0) {
                     logger.error('No active season data available for preview list.', programDataStore)
-                    return
+                    return null
                 }
+                return programDataStore.activeSeason
+            }
+
+            const renderSeasonList = (): void => {
+                const activeSeason = getActiveSeason()
+                if (!activeSeason)
+                    return
                 showingSeasonList = true
                 popupTitle.setVisible(false)
                 contentDiv.innerHTML = ''
@@ -196,11 +202,9 @@ function viewShowEventHandler(): void {
                             break
                         }
 
-                        const activeSeason = programDataStore.activeSeason
-                        if (!activeSeason) {
-                            logger.error('No active season data available for preview list.', programDataStore)
+                        const activeSeason = getActiveSeason()
+                        if (!activeSeason)
                             break
-                        }
                         popupTitle.setText(activeSeason.seasonName)
                         popupTitle.setVisible(true)
                         listElementFactory.createEpisodeElements(activeSeason.episodes, contentDiv)
